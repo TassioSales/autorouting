@@ -38,10 +38,10 @@ export class ObstacleList3d extends ObstacleList {
     )
   }
 
-  getObstacleAt(x: number, y: number, l: number, m?: number): Obstacle | null {
+  getObstacleAt(x: number, y: number, l?: number, m?: number): Obstacle | null {
     m ??= this.GRID_STEP
     for (const obstacle of this.obstacles) {
-      if (obstacle.l !== l) continue // Only consider obstacles on the same layer
+      if (typeof l === "number" && obstacle.l !== l) continue // Only consider obstacles on the same layer if specified
       const halfWidth = obstacle.width / 2 + m
       const halfHeight = obstacle.height / 2 + m
       if (
@@ -56,7 +56,7 @@ export class ObstacleList3d extends ObstacleList {
     return null
   }
 
-  isObstacleAt(x: number, y: number, l: number, m?: number): boolean {
+  isObstacleAt(x: number, y: number, l?: number, m?: number): boolean {
     return this.getObstacleAt(x, y, l, m) !== null
   }
 

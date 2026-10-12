@@ -209,7 +209,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
       current.g +
       manDist(current, neighbor) * (current.travelMarginCostFactor ?? 1) +
       (neighbor.enterMarginCost ?? 0)
-    if (neighbor.l ?? -1 !== current.l ?? -1) {
+    if ((neighbor.l ?? -1) !== (current.l ?? -1)) {
       cost += this.VIA_COST
     }
     return cost
@@ -218,7 +218,13 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
   computeH(node: Node3d): number {
     const dx = Math.abs(node.x - this.goalPoint!.x)
     const dy = Math.abs(node.y - this.goalPoint!.y)
-    const dl = Math.abs(node.l - (this.goalPoint as any).l)
+    const goalL =
+      typeof (this.goalPoint as any).l === "number"
+        ? (this.goalPoint as any).l
+        : (this.goalPoint as any)?.layer
+          ? this.layerToIndex((this.goalPoint as any).layer)
+          : 0
+    const dl = Math.abs((node.l ?? 0) - goalL)
     return (dx + dy) ** this.GOAL_RUSH_FACTOR + dl * this.VIA_COST
   }
 
@@ -347,13 +353,6 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
           dir.dl === forwardDir.dl * -1
         ) {
           return false
-        } else if (
-          dir.dx === forwardDir.dx &&
-          dir.dy === forwardDir.dy &&
-          dir.dl === forwardDir.dl &&
-          node.parent?.obstacleHit
-        ) {
-          return false
         }
         return true
       })
@@ -384,6 +383,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
         travelDistance: number
         travelMarginCostFactor: number
         enterMarginCost: number
+        obstacleHit?: Obstacle | null
       }
     > = []
     for (const travelDir of travelDirs2) {
@@ -413,6 +413,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
             travelDistance: 0,
             enterMarginCost: 0,
             travelMarginCostFactor: 1,
+            obstacleHit: null,
           })
         }
         continue
@@ -424,6 +425,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
             travelDistance: 0,
             enterMarginCost: 0,
             travelMarginCostFactor: 1,
+            obstacleHit: null,
           })
         }
         continue
@@ -470,6 +472,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
           travelDistance: goalDistAlongTravelDir - stopShortDistance,
           enterMarginCost: 0,
           travelMarginCostFactor: 1,
+          obstacleHit: null,
         })
       } else if (
         overcomeDistance !== null &&
@@ -486,6 +489,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
               travelDistance: overcomeDistance - this.OBSTACLE_MARGIN + margin,
               enterMarginCost: enterCost,
               travelMarginCostFactor: travelCostFactor,
+              obstacleHit: null,
             })
           }
         }
@@ -495,6 +499,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
             travelDistance: goalDistAlongTravelDir,
             enterMarginCost: 0,
             travelMarginCostFactor: 1,
+            obstacleHit: null,
           })
         } else if (travelDir.wallDistance > this.largestMargin) {
           for (const { margin, enterCost, travelCostFactor } of this
@@ -505,6 +510,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
                 travelDistance: travelDir.wallDistance - margin,
                 enterMarginCost: enterCost,
                 travelMarginCostFactor: travelCostFactor,
+                obstacleHit: travelDir.obstacle,
               })
             }
           }
@@ -518,6 +524,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
               travelDistance: travelDir.wallDistance - margin,
               enterMarginCost: enterCost,
               travelMarginCostFactor: travelCostFactor,
+              obstacleHit: travelDir.obstacle,
             })
           }
         }
@@ -528,7 +535,7 @@ export class MultilayerIjump extends GeneralizedAstarAutorouter {
       x: node.x + dir.dx * dir.travelDistance,
       y: node.y + dir.dy * dir.travelDistance,
       l: node.l + dir.dl,
-      obstacleHit: dir.obstacle,
+      obstacleHit: dir.obstacleHit ?? null,
       travelMarginCostFactor: dir.travelMarginCostFactor,
       enterMarginCost: dir.enterMarginCost,
     }))
